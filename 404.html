@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000080'/%3E%3Cpath d='M16 4 29 27 3 27Z' fill='%23ffb700' stroke='%23fff' stroke-width='1.5'/%3E%3C/svg%3E" />
+  <title>404 — FACE NOT FOUND</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; }
+    body {
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background:
+        radial-gradient(circle at 8px 11px, rgba(255,255,255,.95) 0 1px, transparent 1.4px),
+        radial-gradient(circle at 23px 29px, rgba(0,255,255,.78) 0 1px, transparent 1.4px),
+        #000;
+      background-size: 61px 61px;
+      color: #000;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .win-dialog {
+      width: min(94vw, 470px);
+      padding: 3px;
+      border: 3px outset #fff;
+      background: #c0c0c0;
+      box-shadow: 6px 6px 0 rgba(0,0,0,.65), 0 0 40px rgba(0,255,255,.25);
+    }
+    .dialog-titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 5px;
+      background: linear-gradient(90deg, #000080, #1084d0);
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .dialog-close {
+      width: 22px; height: 20px; padding: 0;
+      border: 2px outset #fff;
+      background: #c0c0c0;
+      font: bold 13px/15px Arial, sans-serif;
+      cursor: pointer;
+    }
+    .dialog-close:active { border-style: inset; }
+    .dialog-content {
+      display: grid;
+      grid-template-columns: 50px 1fr;
+      gap: 14px;
+      align-items: center;
+      padding: 22px 18px 16px;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+    .error-icon {
+      position: relative;
+      width: 43px; height: 43px;
+      border-radius: 50%;
+      background: #f00;
+      border: 2px solid #800;
+      box-shadow: inset -3px -3px 0 rgba(0,0,0,.22);
+    }
+    .error-icon::before, .error-icon::after {
+      content: "";
+      position: absolute;
+      left: 19px; top: 7px;
+      width: 5px; height: 29px;
+      background: #fff;
+    }
+    .error-icon::before { transform: rotate(45deg); }
+    .error-icon::after { transform: rotate(-45deg); }
+    .dialog-actions { padding: 0 18px 15px; text-align: center; }
+    .dialog-ok {
+      display: inline-block;
+      min-width: 110px;
+      padding: 6px 15px;
+      border: 3px outset #fff;
+      background: #c0c0c0;
+      color: #000;
+      font: 14px/1 Arial, Helvetica, sans-serif;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .dialog-ok:active { border-style: inset; }
+    .blink { animation: blink 1.05s steps(1, end) infinite; }
+    @keyframes blink { 50% { visibility: hidden; } }
+    @media (prefers-reduced-motion: reduce) { .blink { animation: none; } }
+  </style>
+</head>
+<body>
+  <div class="win-dialog" role="alert">
+    <div class="dialog-titlebar">
+      <span>Probability.exe</span>
+      <a class="dialog-close" href="./" aria-label="Return to homepage" style="text-decoration:none;color:#000;text-align:center;">×</a>
+    </div>
+    <div class="dialog-content">
+      <div class="error-icon" aria-hidden="true"></div>
+      <div>
+        <strong>ERROR 404: FACE NOT FOUND.</strong><br /><br />
+        You have wandered off the surface of the die entirely.
+        There are only 1,000,000 addresses here, and this
+        <span class="blink">was not one of them</span>.
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <a class="dialog-ok" href="./">RETURN TO THE DIE</a>
+    </div>
+  </div>
+</body>
+</html>

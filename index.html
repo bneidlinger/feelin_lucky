@@ -1,0 +1,1584 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="A deliberately 1997-flavored interactive visualization of one-in-a-million odds." />
+  <meta name="theme-color" content="#000080" />
+  <!-- Social cards. Most crawlers require absolute URLs for og:image / og:url —
+       after enabling GitHub Pages, replace these with e.g.
+       https://<username>.github.io/feeling-lucky-d1000000/ -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Feeling Luck? — The Internet's Largest Imaginary Die" />
+  <meta property="og:description" content="One gold face is hidden among 1,000,000 shader-addressed triangles. Press YES and approach the surface. Slowly." />
+  <meta property="og:image" content="assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Feeling Luck? — The Internet's Largest Imaginary Die" />
+  <meta name="twitter:description" content="One gold face. 1,000,000 possibilities. No plug-ins required." />
+  <meta name="twitter:image" content="assets/og-image.png" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000080'/%3E%3Cpath d='M16 4 29 27 3 27Z' fill='%23ffb700' stroke='%23fff' stroke-width='1.5'/%3E%3C/svg%3E" />
+  <title>FEELING LUCK? — D1,000,000</title>
+  <style>
+    :root {
+      --win-gray: #c0c0c0;
+      --win-dark: #000080;
+      --win-shadow: #404040;
+      --win-light: #ffffff;
+      --terminal-green: #70ff70;
+      --terminal-amber: #ffd65a;
+      --terminal-red: #ff5d5d;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      background-color: #000;
+    }
+
+    body {
+      overflow-x: hidden;
+      color: #fff;
+      font-family: "Times New Roman", Times, serif;
+      background-image:
+        radial-gradient(circle at 8px 11px, rgba(255,255,255,.95) 0 1px, transparent 1.4px),
+        radial-gradient(circle at 23px 29px, rgba(0,255,255,.78) 0 1px, transparent 1.4px),
+        radial-gradient(circle at 39px 13px, rgba(255,0,255,.72) 0 1px, transparent 1.4px),
+        radial-gradient(circle at 52px 46px, rgba(255,255,0,.65) 0 1px, transparent 1.4px);
+      background-size: 61px 61px;
+      image-rendering: pixelated;
+    }
+
+    button, input { font: inherit; }
+
+    .hidden { display: none !important; }
+
+    .blink { animation: blink 1.05s steps(1, end) infinite; }
+    @keyframes blink { 50% { visibility: hidden; } }
+
+    .rainbow-text {
+      background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+      background-size: 260% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: rainbowMove 2.4s linear infinite;
+    }
+    @keyframes rainbowMove { to { background-position: 260% 0; } }
+
+    .marquee {
+      overflow: hidden;
+      white-space: nowrap;
+      border-top: 2px ridge #fff;
+      border-bottom: 2px ridge #fff;
+      background: #000080;
+      color: #ffff00;
+      font: bold 16px/26px Arial, Helvetica, sans-serif;
+    }
+    .marquee span {
+      display: inline-block;
+      min-width: 100%;
+      padding-left: 100%;
+      animation: marquee 16s linear infinite;
+    }
+    @keyframes marquee { to { transform: translateX(-100%); } }
+
+    .landing {
+      width: min(94vw, 760px);
+      margin: 22px auto 44px;
+      text-align: center;
+      background: #080018;
+      border: 7px ridge #c0c0c0;
+      box-shadow: 0 0 0 3px #000, 0 0 28px rgba(0,255,255,.28);
+    }
+
+    .landing-inner { padding: 18px 18px 10px; }
+
+    .micro-header {
+      color: #00ffff;
+      font: bold 12px/1.4 "Courier New", monospace;
+      letter-spacing: .08em;
+    }
+
+    .title {
+      margin: 12px 0 2px;
+      font: bold clamp(42px, 9vw, 82px)/.95 "Comic Sans MS", "Times New Roman", serif;
+      text-shadow: 3px 3px 0 #0000ff, -3px -3px 0 #ff0000;
+      transform: rotate(-1deg);
+    }
+
+    .subtitle {
+      margin: 7px 0 16px;
+      color: #fff;
+      font: italic bold clamp(17px, 3.5vw, 26px)/1.25 "Times New Roman", serif;
+    }
+
+    .construction-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin: 12px 0 18px;
+      color: #ffff00;
+      font: bold 13px/1.2 "Courier New", monospace;
+    }
+
+    .pixel-cone {
+      width: 23px;
+      height: 23px;
+      background:
+        linear-gradient(135deg, transparent 0 24%, #ff7b00 25% 38%, #fff 39% 53%, #ff7b00 54% 68%, transparent 69%);
+      border-bottom: 4px solid #ff7b00;
+      filter: drop-shadow(2px 2px #000);
+    }
+
+    .pitch {
+      max-width: 610px;
+      margin: 0 auto;
+      padding: 13px 16px;
+      border: 3px groove #00ffff;
+      background: rgba(0,0,64,.66);
+      color: #fff;
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    .pitch strong { color: #ffff00; }
+
+    .choice-label {
+      margin: 20px 0 8px;
+      color: #00ff00;
+      font: bold 24px/1 "Courier New", monospace;
+    }
+
+    .choice-row {
+      display: flex;
+      justify-content: center;
+      gap: 28px;
+      flex-wrap: wrap;
+      margin: 12px 0 20px;
+    }
+
+    .retro-button {
+      min-width: 142px;
+      padding: 10px 22px;
+      border: 4px outset #fff;
+      background: var(--win-gray);
+      color: #000;
+      font: bold 24px/1 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 #000;
+    }
+    .retro-button:hover { background: #ffff00; }
+    .retro-button:active {
+      border-style: inset;
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 #000;
+    }
+    .retro-button:focus-visible { outline: 3px dotted #ff00ff; outline-offset: 4px; }
+
+    .webring {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0 6px;
+      color: #00ffff;
+      font: 12px/1.3 Arial, Helvetica, sans-serif;
+    }
+    .webring::before, .webring::after { content: ""; height: 2px; background: #ff00ff; }
+
+    .visitor-counter {
+      margin: 13px 0 2px;
+      font: bold 12px/1.2 "Courier New", monospace;
+      color: #aaa;
+    }
+    .counter-digits {
+      display: inline-block;
+      padding: 2px 5px;
+      color: #ff4b4b;
+      background: #090909;
+      border: 2px inset #808080;
+      letter-spacing: .18em;
+    }
+
+    .best-viewed {
+      color: #aaa;
+      font: 11px/1.25 Arial, Helvetica, sans-serif;
+    }
+
+    .exhibit {
+      width: min(98vw, 1180px);
+      margin: 8px auto 28px;
+      padding: 4px;
+      background: var(--win-gray);
+      color: #000;
+      border: 3px outset #fff;
+      box-shadow: 0 0 0 2px #000, 0 0 35px rgba(0,255,255,.22);
+    }
+
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 31px;
+      padding: 3px 4px 3px 7px;
+      color: #fff;
+      background: linear-gradient(90deg, #000080, #1084d0);
+      font: bold 15px/1 Arial, Helvetica, sans-serif;
+      letter-spacing: .02em;
+    }
+
+    .titlebar-buttons { display: flex; gap: 3px; }
+    .titlebar-button {
+      width: 24px;
+      height: 22px;
+      padding: 0;
+      border: 2px outset #fff;
+      background: var(--win-gray);
+      color: #000;
+      font: bold 15px/17px Arial, sans-serif;
+      cursor: pointer;
+    }
+    .titlebar-button:active { border-style: inset; }
+
+    .menu-row {
+      display: flex;
+      gap: 20px;
+      padding: 4px 8px 5px;
+      border-bottom: 1px solid #777;
+      font: 13px/1 Arial, Helvetica, sans-serif;
+    }
+    .menu-row span::first-letter { text-decoration: underline; }
+
+    .exhibit-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 278px;
+      gap: 7px;
+      padding: 7px;
+    }
+
+    .viewport-column { min-width: 0; }
+
+    .canvas-frame {
+      position: relative;
+      width: 100%;
+      height: min(72vh, 720px);
+      min-height: 430px;
+      overflow: hidden;
+      border: 4px inset #f4f4f4;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(0,0,70,.5), rgba(0,0,0,.96) 58%),
+        #000;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+    .canvas-frame.dragging { cursor: grabbing; }
+
+    #orbCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .canvas-overlay {
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 10px;
+      font-family: "Courier New", monospace;
+      text-shadow: 1px 1px 0 #000, -1px -1px 0 #000;
+    }
+
+    .scanline {
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      opacity: .18;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.06) 0,
+        rgba(255,255,255,.06) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+      mix-blend-mode: screen;
+    }
+
+    .hud-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      color: var(--terminal-green);
+      font-size: clamp(11px, 1.6vw, 15px);
+      font-weight: bold;
+    }
+
+    .hud-box {
+      padding: 5px 7px;
+      border: 1px solid rgba(112,255,112,.65);
+      background: rgba(0,0,0,.56);
+    }
+
+    .center-reticle {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 28px;
+      height: 28px;
+      transform: translate(-50%, -50%);
+      opacity: .8;
+    }
+    .center-reticle::before,
+    .center-reticle::after {
+      content: "";
+      position: absolute;
+      background: rgba(112,255,112,.72);
+      box-shadow: 0 0 3px #00ff00;
+    }
+    .center-reticle::before { left: 13px; top: 0; width: 2px; height: 28px; }
+    .center-reticle::after { left: 0; top: 13px; width: 28px; height: 2px; }
+
+    .approach-message {
+      align-self: center;
+      margin: auto 0;
+      padding: 8px 13px;
+      border: 2px solid #ffff00;
+      background: rgba(0,0,0,.72);
+      color: #ffff00;
+      font-size: clamp(14px, 2vw, 23px);
+      font-weight: bold;
+      text-align: center;
+      animation: pulse 1.1s ease-in-out infinite alternate;
+    }
+    @keyframes pulse { to { opacity: .55; } }
+
+    .hud-bottom {
+      display: flex;
+      justify-content: center;
+      color: #fff;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .group-box {
+      position: relative;
+      padding: 17px 9px 9px;
+      border: 2px groove #fff;
+      background: #c0c0c0;
+    }
+
+    .group-title {
+      position: absolute;
+      top: -8px;
+      left: 8px;
+      padding: 0 5px;
+      background: #c0c0c0;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .readout {
+      margin-bottom: 7px;
+      padding: 6px;
+      border: 2px inset #fff;
+      background: #000;
+      color: var(--terminal-green);
+      font: bold 13px/1.38 "Courier New", monospace;
+      min-height: 33px;
+      word-break: break-word;
+    }
+    .readout.amber { color: var(--terminal-amber); }
+
+    .progress-shell {
+      height: 19px;
+      padding: 2px;
+      border: 2px inset #fff;
+      background: #fff;
+    }
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      background: repeating-linear-gradient(90deg, #000080 0 8px, #1084d0 8px 10px);
+      transition: width .18s linear;
+    }
+
+    .tiny-note {
+      margin: 6px 0 0;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 54px);
+      grid-template-rows: repeat(3, 42px);
+      justify-content: center;
+      gap: 3px;
+      margin: 3px auto 8px;
+    }
+
+    .dpad button {
+      padding: 0;
+      border: 3px outset #fff;
+      background: #d4d0c8;
+      color: #000;
+      font: bold 23px/1 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      touch-action: none;
+    }
+    .dpad button:active, .dpad button.active { border-style: inset; background: #aaa; }
+    .dpad .up { grid-column: 2; grid-row: 1; }
+    .dpad .left { grid-column: 1; grid-row: 2; }
+    .dpad .center { grid-column: 2; grid-row: 2; font-size: 11px; cursor: default; }
+    .dpad .right { grid-column: 3; grid-row: 2; }
+    .dpad .down { grid-column: 2; grid-row: 3; }
+
+    .sidebar-button {
+      width: 100%;
+      margin-top: 5px;
+      padding: 6px 7px;
+      border: 3px outset #fff;
+      background: #d4d0c8;
+      color: #000;
+      font: bold 13px/1 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+    }
+    .sidebar-button:active { border-style: inset; }
+
+    .museum-copy {
+      font-size: 12px;
+      line-height: 1.38;
+    }
+
+    .statusbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px;
+      padding: 0 7px 7px;
+      font: 12px/1 Arial, Helvetica, sans-serif;
+    }
+    .status-cell {
+      padding: 4px 6px;
+      border: 2px inset #fff;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .dialog-shade {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(0,0,0,.45);
+    }
+
+    .win-dialog {
+      width: min(92vw, 430px);
+      padding: 3px;
+      border: 3px outset #fff;
+      background: #c0c0c0;
+      color: #000;
+      box-shadow: 6px 6px 0 rgba(0,0,0,.65);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .dialog-titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 5px;
+      background: #000080;
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .dialog-close {
+      width: 22px;
+      height: 20px;
+      padding: 0;
+      border: 2px outset #fff;
+      background: #c0c0c0;
+      color: #000;
+      font: bold 13px/15px Arial, sans-serif;
+      cursor: pointer;
+    }
+
+    .dialog-content {
+      display: grid;
+      grid-template-columns: 50px 1fr;
+      gap: 14px;
+      align-items: center;
+      padding: 22px 18px 16px;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+
+    .error-icon {
+      position: relative;
+      width: 43px;
+      height: 43px;
+      border-radius: 50%;
+      background: #f00;
+      border: 2px solid #800;
+      box-shadow: inset -3px -3px 0 rgba(0,0,0,.22);
+    }
+    .error-icon::before,
+    .error-icon::after {
+      content: "";
+      position: absolute;
+      left: 19px;
+      top: 7px;
+      width: 5px;
+      height: 29px;
+      background: #fff;
+    }
+    .error-icon::before { transform: rotate(45deg); }
+    .error-icon::after { transform: rotate(-45deg); }
+
+    .dialog-actions { padding: 0 18px 15px; text-align: center; }
+    .dialog-ok {
+      min-width: 92px;
+      padding: 5px 15px;
+      border: 3px outset #fff;
+      background: #c0c0c0;
+      font: 14px/1 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+    }
+    .dialog-ok:active { border-style: inset; }
+
+    .win-banner {
+      position: fixed;
+      z-index: 110;
+      left: 50%;
+      top: 50%;
+      width: min(92vw, 650px);
+      transform: translate(-50%, -50%);
+      padding: 7px;
+      border: 6px ridge #ffff00;
+      background: #000080;
+      color: #fff;
+      box-shadow: 0 0 0 5px #000, 0 0 50px #ffff00;
+      text-align: center;
+      font-family: "Comic Sans MS", Arial, sans-serif;
+    }
+    .win-banner h2 {
+      margin: 4px 0 12px;
+      color: #ffff00;
+      font-size: clamp(34px, 7vw, 66px);
+      line-height: .95;
+      text-shadow: 3px 3px #ff0000;
+    }
+    .win-banner p { font: bold 17px/1.4 "Courier New", monospace; }
+    .win-banner button { margin: 8px 4px 2px; }
+
+    .webgl-fallback {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 35px;
+      background: #000;
+      color: #ff5d5d;
+      font: bold 16px/1.4 "Courier New", monospace;
+      text-align: center;
+    }
+
+    @media (max-width: 820px) {
+      .exhibit-body { grid-template-columns: 1fr; }
+      .sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .canvas-frame { height: 62vh; min-height: 400px; }
+    }
+
+    @media (max-width: 560px) {
+      .landing { margin-top: 8px; }
+      .landing-inner { padding-left: 10px; padding-right: 10px; }
+      .choice-row { gap: 12px; }
+      .retro-button { min-width: 124px; }
+      .exhibit { width: 100%; margin: 0; border-left: 0; border-right: 0; }
+      .exhibit-body { padding: 4px; }
+      .sidebar { grid-template-columns: 1fr; }
+      .canvas-frame { height: 58vh; min-height: 360px; }
+      .menu-row { gap: 12px; font-size: 12px; }
+      .hud-top { flex-direction: column; gap: 4px; }
+      .hud-top .hud-box:last-child { align-self: flex-end; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .blink, .rainbow-text, .marquee span, .approach-message { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section id="landing" class="landing" aria-labelledby="landingTitle">
+      <div class="marquee"><span>WELCOME TO THE WORLD WIDE WEB &nbsp;★&nbsp; ONE GOLD FACE &nbsp;★&nbsp; ONE MILLION POSSIBILITIES &nbsp;★&nbsp; NO PLUG-INS REQUIRED &nbsp;★&nbsp;</span></div>
+      <div class="landing-inner">
+        <div class="micro-header">BRANDO'S PROBABILITY ZONE // EST. 1997*</div>
+        <h1 id="landingTitle" class="title rainbow-text">Feeling Luck?</h1>
+        <p class="subtitle"><span class="blink">NEW!</span> The Internet's Largest Imaginary Die</p>
+
+        <div class="construction-row" aria-hidden="true">
+          <span class="pixel-cone"></span>
+          <span>THIS PAGE IS PERMANENTLY UNDER CONSTRUCTION</span>
+          <span class="pixel-cone"></span>
+        </div>
+
+        <div class="pitch">
+          Somewhere on this <strong>D1,000,000</strong> is one gold face.<br />
+          Press YES and the machine will choose one face using your browser's cryptographic random-number generator. Then it will walk you toward the surface—slowly.
+        </div>
+
+        <div class="choice-label">DO YOU ACCEPT THE ODDS?</div>
+        <div class="choice-row">
+          <button id="yesButton" class="retro-button" type="button">YES</button>
+          <button id="noButton" class="retro-button" type="button">NO</button>
+        </div>
+
+        <div class="webring">ONE-IN-A-MILLION WEBRING</div>
+        <div class="visitor-counter">YOU ARE VISITOR <span class="counter-digits">0000427</span></div>
+        <p class="best-viewed">Best viewed at 800×600 with 16-bit color, Netscape Navigator 4.0, and irresponsible optimism.<br />*Historical accuracy not included.</p>
+      </div>
+    </section>
+
+    <section id="exhibit" class="exhibit hidden" aria-labelledby="terminalTitle">
+      <div class="titlebar">
+        <span id="terminalTitle">D1,000,000 Surface Explorer — Microsoft Internet Explorer</span>
+        <div class="titlebar-buttons" aria-hidden="true">
+          <button class="titlebar-button" tabindex="-1">_</button>
+          <button class="titlebar-button" tabindex="-1">□</button>
+          <button id="fakeClose" class="titlebar-button" type="button">×</button>
+        </div>
+      </div>
+      <div class="menu-row" aria-hidden="true">
+        <span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Probability</span><span>Help</span>
+      </div>
+
+      <div class="exhibit-body">
+        <div class="viewport-column">
+          <div id="canvasFrame" class="canvas-frame" aria-label="Interactive three-dimensional million-sided die">
+            <canvas id="orbCanvas"></canvas>
+            <div class="scanline"></div>
+            <div class="canvas-overlay">
+              <div class="hud-top">
+                <div class="hud-box">D1,000,000 // OPTICAL SURFACE UNIT</div>
+                <div id="cameraReadout" class="hud-box">CAMERA: STANDBY</div>
+              </div>
+              <div id="approachMessage" class="approach-message">SELECTING ONE FACE OUT OF 1,000,000…</div>
+              <div id="reticle" class="center-reticle hidden"></div>
+              <div class="hud-bottom">
+                <div id="hudInstruction" class="hud-box">Please do not lick the probability object.</div>
+              </div>
+            </div>
+            <div id="webglFallback" class="webgl-fallback hidden">WEBGL WAS NOT DETECTED.<br /><br />This browser has been rejected by 1997, which is frankly impressive.</div>
+          </div>
+        </div>
+
+        <aside class="sidebar">
+          <section class="group-box">
+            <div class="group-title">Selected face</div>
+            <div id="faceReadout" class="readout">WAITING…</div>
+            <div id="landingResult" class="readout amber">GOLD FACE: HIDDEN</div>
+          </section>
+
+          <section class="group-box">
+            <div class="group-title">Manual surface controls</div>
+            <div class="dpad" aria-label="Slow rotation controls">
+              <button class="up" data-direction="up" type="button" aria-label="Move up">▲</button>
+              <button class="left" data-direction="left" type="button" aria-label="Move left">◀</button>
+              <button class="center" type="button" tabindex="-1">SLOW<br />SCAN</button>
+              <button class="right" data-direction="right" type="button" aria-label="Move right">▶</button>
+              <button class="down" data-direction="down" type="button" aria-label="Move down">▼</button>
+            </div>
+            <p class="tiny-note">Hold an arrow, use keyboard arrows/WASD, or drag the surface. Movement is intentionally restrained. The universe does not owe you a convenient search speed.</p>
+          </section>
+
+          <section class="group-box">
+            <div class="group-title">Search statistics</div>
+            <div id="examinedReadout" class="readout">CENTERED FACES: 0</div>
+            <div class="progress-shell" title="Centered faces out of one million">
+              <div id="progressBar" class="progress-bar"></div>
+            </div>
+            <p id="timeEstimate" class="tiny-note">At one centered face per second, checking all one million would take 11 days, 13 hours, 46 minutes, and 40 seconds.</p>
+          </section>
+
+          <section class="group-box">
+            <div class="group-title">Museum placard</div>
+            <div class="museum-copy">
+              One ordinary-looking gold triangle is hidden among exactly <strong>1,000,000 addressable triangular faces</strong>. From a distance, the object looks smooth. Up close, the number becomes physical.
+            </div>
+            <button id="restartButton" class="sidebar-button" type="button">NEW RANDOM APPROACH</button>
+            <button id="homeButton" class="sidebar-button" type="button">RETURN TO HOMEPAGE</button>
+          </section>
+        </aside>
+      </div>
+
+      <div class="statusbar">
+        <div id="statusText" class="status-cell">Initializing excessive geometry substitute…</div>
+        <div class="status-cell">Internet zone</div>
+      </div>
+    </section>
+  </main>
+
+  <div id="noDialog" class="dialog-shade hidden" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+    <div class="win-dialog">
+      <div class="dialog-titlebar">
+        <span id="dialogTitle">Probability.exe</span>
+        <button id="dialogClose" class="dialog-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="dialog-content">
+        <div class="error-icon" aria-hidden="true"></div>
+        <div id="dialogMessage">No.</div>
+      </div>
+      <div class="dialog-actions">
+        <button id="dialogOk" class="dialog-ok" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="winBanner" class="win-banner hidden" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+    <h2 id="winTitle" class="blink">THE GOLD FACE</h2>
+    <p id="winCopy"></p>
+    <button id="keepExploring" class="retro-button" type="button">KEEP LOOKING</button>
+    <button id="newGold" class="retro-button" type="button">RESET</button>
+  </div>
+
+  <script>
+  (() => {
+    'use strict';
+
+    const FACE_COUNT = 1_000_000;
+    const U_CELLS = 1000;
+    const V_CELLS = 500;
+    const APPROACH_MS = 9800;
+    const CAMERA_FAR = 4.15;
+    const CAMERA_NEAR = 1.075;
+    const KEY_SPEED = 0.060; // radians per second: deliberately slow.
+    const DRAG_SCALE = 0.00105;
+
+    const $ = (id) => document.getElementById(id);
+    const landing = $('landing');
+    const exhibit = $('exhibit');
+    const yesButton = $('yesButton');
+    const noButton = $('noButton');
+    const fakeClose = $('fakeClose');
+    const restartButton = $('restartButton');
+    const homeButton = $('homeButton');
+    const canvas = $('orbCanvas');
+    const canvasFrame = $('canvasFrame');
+    const approachMessage = $('approachMessage');
+    const cameraReadout = $('cameraReadout');
+    const hudInstruction = $('hudInstruction');
+    const faceReadout = $('faceReadout');
+    const landingResult = $('landingResult');
+    const examinedReadout = $('examinedReadout');
+    const progressBar = $('progressBar');
+    const timeEstimate = $('timeEstimate');
+    const statusText = $('statusText');
+    const reticle = $('reticle');
+    const noDialog = $('noDialog');
+    const dialogMessage = $('dialogMessage');
+    const dialogClose = $('dialogClose');
+    const dialogOk = $('dialogOk');
+    const winBanner = $('winBanner');
+    const winCopy = $('winCopy');
+    const keepExploring = $('keepExploring');
+    const newGold = $('newGold');
+    const webglFallback = $('webglFallback');
+
+    const antiMemes = [
+      'COWARDICE DETECTED. Please reinstall curiosity and try again.',
+      'You selected NO. The gold face remains devastated but professional.',
+      'This was not a consent screen. It was an assessment.',
+      'NO is not a valid probability strategy.',
+      'The Internet has recorded your refusal in a text file nobody will ever read.',
+      'You miss 100% of the million-sided dice you do not approach. — Ancient modem proverb',
+      'Congratulations. You successfully avoided a harmless imaginary object.',
+      'ERROR 1997: Ambition not found.',
+      'The gold triangle whispered “typical” and went back to work.',
+      'AOL Keyword: REGRET',
+      'Fine. Return to the websites about dancing hamsters.',
+      'Statistically, clicking NO had a 100% chance of producing this dialog.'
+    ];
+
+    let gl = null;
+    let isWebGL2 = false;
+    let program = null;
+    let uniforms = null;
+    let orientation = quatIdentity();
+    let approachStartOrientation = quatIdentity();
+    let approachEndOrientation = quatIdentity();
+    let approachStart = 0;
+    let cameraDistance = CAMERA_FAR;
+    let mode = 'idle';
+    let goldFace = randomInt(FACE_COUNT);
+    let landingFace = -1;
+    let centeredFace = -1;
+    let startTime = 0;
+    let lastFrame = performance.now();
+    let lastVisitSample = 0;
+    let winShown = false;
+    let pointerDown = false;
+    let lastPointerX = 0;
+    let lastPointerY = 0;
+    const keys = new Set();
+    const heldDirections = new Set();
+    const visitedFaces = new Set();
+
+    // Museum/test mode: ?demo=1 makes the initial selection land near the gold face.
+    const params = new URLSearchParams(location.search);
+    const demoMode = params.get('demo') === '1';
+    const forcedGoldText = params.get('gold');
+    if (forcedGoldText !== null) {
+      const forcedGold = Number(forcedGoldText);
+      if (Number.isInteger(forcedGold) && forcedGold >= 0 && forcedGold < FACE_COUNT) {
+        goldFace = forcedGold;
+      }
+    }
+
+    yesButton.addEventListener('click', () => {
+      playTone(520, 0.07, 'square', 0.045);
+      landing.classList.add('hidden');
+      exhibit.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        resizeCanvas();
+        beginApproach();
+      });
+    });
+
+    noButton.addEventListener('click', () => {
+      playErrorBuzz();
+      dialogMessage.textContent = antiMemes[randomInt(antiMemes.length)];
+      noDialog.classList.remove('hidden');
+      dialogOk.focus();
+    });
+
+    const closeDialog = () => {
+      noDialog.classList.add('hidden');
+      noButton.focus();
+    };
+    dialogClose.addEventListener('click', closeDialog);
+    dialogOk.addEventListener('click', closeDialog);
+    noDialog.addEventListener('click', (event) => {
+      if (event.target === noDialog) closeDialog();
+    });
+
+    fakeClose.addEventListener('click', () => {
+      dialogMessage.textContent = 'This window cannot close. It is now part of the permanent collection.';
+      noDialog.classList.remove('hidden');
+      dialogOk.focus();
+    });
+
+    restartButton.addEventListener('click', () => {
+      playTone(460, 0.06, 'square', 0.035);
+      beginApproach();
+    });
+
+    homeButton.addEventListener('click', () => {
+      mode = 'idle';
+      exhibit.classList.add('hidden');
+      landing.classList.remove('hidden');
+      yesButton.focus();
+    });
+
+    keepExploring.addEventListener('click', () => {
+      winBanner.classList.add('hidden');
+      canvasFrame.focus?.();
+    });
+
+    newGold.addEventListener('click', () => {
+      winBanner.classList.add('hidden');
+      goldFace = randomInt(FACE_COUNT);
+      winShown = false;
+      beginApproach();
+    });
+
+    document.querySelectorAll('[data-direction]').forEach((button) => {
+      const direction = button.dataset.direction;
+      const start = (event) => {
+        event.preventDefault();
+        if (mode !== 'explore') return;
+        heldDirections.add(direction);
+        button.classList.add('active');
+        button.setPointerCapture?.(event.pointerId);
+      };
+      const stop = () => {
+        heldDirections.delete(direction);
+        button.classList.remove('active');
+      };
+      button.addEventListener('pointerdown', start);
+      button.addEventListener('pointerup', stop);
+      button.addEventListener('pointercancel', stop);
+      button.addEventListener('lostpointercapture', stop);
+    });
+
+    canvasFrame.addEventListener('pointerdown', (event) => {
+      if (mode !== 'explore') return;
+      pointerDown = true;
+      lastPointerX = event.clientX;
+      lastPointerY = event.clientY;
+      canvasFrame.classList.add('dragging');
+      canvasFrame.setPointerCapture(event.pointerId);
+    });
+
+    canvasFrame.addEventListener('pointermove', (event) => {
+      if (!pointerDown || mode !== 'explore') return;
+      const dx = event.clientX - lastPointerX;
+      const dy = event.clientY - lastPointerY;
+      lastPointerX = event.clientX;
+      lastPointerY = event.clientY;
+      rotateWorld(-dy * DRAG_SCALE, dx * DRAG_SCALE);
+    });
+
+    const endPointer = (event) => {
+      pointerDown = false;
+      canvasFrame.classList.remove('dragging');
+      if (event?.pointerId !== undefined) canvasFrame.releasePointerCapture?.(event.pointerId);
+    };
+    canvasFrame.addEventListener('pointerup', endPointer);
+    canvasFrame.addEventListener('pointercancel', endPointer);
+
+    window.addEventListener('keydown', (event) => {
+      const k = event.key.toLowerCase();
+      if (mode !== 'idle' && ['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(k)) {
+        event.preventDefault();
+        keys.add(k);
+      }
+      if (event.key === 'Escape') {
+        noDialog.classList.add('hidden');
+        winBanner.classList.add('hidden');
+      }
+    });
+    window.addEventListener('keyup', (event) => keys.delete(event.key.toLowerCase()));
+    window.addEventListener('blur', () => {
+      keys.clear();
+      heldDirections.clear();
+      pointerDown = false;
+      canvasFrame.classList.remove('dragging');
+    });
+    window.addEventListener('resize', resizeCanvas, { passive: true });
+
+    function beginApproach() {
+      if (!gl) initWebGL();
+      if (!gl) return;
+
+      visitedFaces.clear();
+      updateVisitReadout();
+      winShown = false;
+      winBanner.classList.add('hidden');
+      mode = 'approach';
+      cameraDistance = CAMERA_FAR;
+      approachStart = performance.now();
+      startTime = approachStart;
+      lastVisitSample = 0;
+
+      landingFace = demoMode ? nearbyFace(goldFace, 14, 35) : randomInt(FACE_COUNT);
+      approachStartOrientation = randomQuaternion();
+      orientation = approachStartOrientation.slice();
+      const targetDirection = faceCenterDirection(landingFace);
+      approachEndOrientation = quatFromTo(targetDirection, [0, 0, 1]);
+
+      approachMessage.classList.remove('hidden');
+      approachMessage.textContent = 'SELECTING ONE FACE OUT OF 1,000,000…';
+      reticle.classList.add('hidden');
+      hudInstruction.textContent = 'Please do not lick the probability object.';
+      faceReadout.textContent = 'RNG REQUEST PENDING…';
+      landingResult.textContent = 'GOLD FACE: HIDDEN';
+      landingResult.classList.add('amber');
+      cameraReadout.textContent = 'CAMERA: ORBITAL';
+      statusText.textContent = 'crypto.getRandomValues() selected a uniform face address.';
+    }
+
+    function settleApproach() {
+      mode = 'explore';
+      orientation = approachEndOrientation.slice();
+      cameraDistance = CAMERA_NEAR;
+      approachMessage.classList.add('hidden');
+      reticle.classList.remove('hidden');
+      cameraReadout.textContent = 'CAMERA: HUMAN RANGE';
+      hudInstruction.textContent = 'DRAG OR HOLD ARROWS — THE SURFACE WILL MOVE SLOWLY';
+      centeredFace = faceAtCameraCenter();
+      visitFace(centeredFace);
+
+      faceReadout.textContent = `CENTER FACE: ${formatFace(centeredFace)}`;
+      if (landingFace === goldFace) {
+        landingResult.textContent = 'IMMEDIATE HIT: 1 IN 1,000,000';
+        landingResult.classList.remove('amber');
+        statusText.textContent = 'The first random face was gold. This is not a drill.';
+        showWin(true);
+      } else {
+        landingResult.textContent = `INITIAL FACE: ${formatFace(landingFace)} — NOT GOLD`;
+        statusText.textContent = 'Manual scan enabled. Gold location remains undisclosed.';
+        playTone(740, 0.09, 'sine', 0.035);
+      }
+    }
+
+    function nearbyFace(faceId, minOffset, maxOffset) {
+      const delta = minOffset + randomInt(Math.max(1, maxOffset - minOffset));
+      return (faceId + (randomInt(2) ? delta : -delta) + FACE_COUNT) % FACE_COUNT;
+    }
+
+    function initWebGL() {
+      const contextOptions = {
+        antialias: false,
+        alpha: true,
+        premultipliedAlpha: false,
+        powerPreference: 'high-performance'
+      };
+
+      gl = canvas.getContext('webgl2', contextOptions);
+      isWebGL2 = !!gl;
+      if (!gl) {
+        gl = canvas.getContext('webgl', contextOptions) || canvas.getContext('experimental-webgl', contextOptions);
+        isWebGL2 = false;
+      }
+
+      if (!gl) {
+        webglFallback.classList.remove('hidden');
+        approachMessage.classList.add('hidden');
+        statusText.textContent = 'WebGL unavailable.';
+        return;
+      }
+
+      if (!isWebGL2) {
+        const derivatives = gl.getExtension('OES_standard_derivatives');
+        if (!derivatives) {
+          webglFallback.classList.remove('hidden');
+          webglFallback.textContent = 'WEBGL WAS FOUND, BUT STANDARD DERIVATIVES WERE NOT. THE TRIANGLES REFUSE TO DRAW THEIR OWN EDGES.';
+          gl = null;
+          return;
+        }
+      }
+
+      const vertexSource = isWebGL2 ? `#version 300 es
+        in vec2 a_position;
+        void main() {
+          gl_Position = vec4(a_position, 0.0, 1.0);
+        }
+      ` : `
+        attribute vec2 a_position;
+        void main() {
+          gl_Position = vec4(a_position, 0.0, 1.0);
+        }
+      `;
+
+      const fragmentBody = `
+        precision highp float;
+
+        uniform vec2 u_resolution;
+        uniform float u_time;
+        uniform float u_camera;
+        uniform mat3 u_invRotation;
+        uniform mat3 u_rotation;
+        uniform float u_goldFace;
+        uniform float u_detailBoost;
+
+        const float PI = 3.1415926535897932384626433832795;
+        const float TAU = 6.283185307179586476925286766559;
+        const float U_CELLS = 1000.0;
+        const float V_CELLS = 500.0;
+
+        float hash11(float p) {
+          p = fract(p * 0.1031);
+          p *= p + 33.33;
+          p *= p + p;
+          return fract(p);
+        }
+
+        vec3 sphereFromUV(vec2 uv) {
+          float lon = (uv.x - 0.5) * TAU;
+          float lat = (uv.y - 0.5) * PI;
+          float c = cos(lat);
+          return vec3(cos(lon) * c, sin(lat), sin(lon) * c);
+        }
+
+        vec4 renderPixel() {
+          vec2 p = (2.0 * gl_FragCoord.xy - u_resolution.xy) / u_resolution.y;
+          float focal = 1.0 / tan(radians(50.0) * 0.5);
+          vec3 ro = vec3(0.0, 0.0, u_camera);
+          vec3 rd = normalize(vec3(p.x, p.y, -focal));
+
+          float b = dot(ro, rd);
+          float c = dot(ro, ro) - 1.0;
+          float h = b * b - c;
+
+          if (h < 0.0) {
+            float starSeed = floor(gl_FragCoord.x * 0.43) + floor(gl_FragCoord.y * 0.37) * 991.0;
+            float star = step(0.9965, hash11(starSeed));
+            float twinkle = 0.45 + 0.55 * sin(u_time * 1.7 + starSeed);
+            vec3 starColor = mix(vec3(0.0), vec3(0.45, 0.62, 1.0) * twinkle, star);
+            return vec4(starColor, 1.0);
+          }
+
+          float t = -b - sqrt(h);
+          vec3 worldPos = ro + rd * t;
+          vec3 localPos = normalize(u_invRotation * worldPos);
+
+          float u = atan(localPos.z, localPos.x) / TAU + 0.5;
+          float v = asin(clamp(localPos.y, -1.0, 1.0)) / PI + 0.5;
+          u = fract(u + 1.0);
+          v = clamp(v, 0.000001, 0.999999);
+
+          vec2 grid = vec2(u * U_CELLS, v * V_CELLS);
+          vec2 cell = floor(grid);
+          vec2 f = fract(grid);
+          float tri = (f.x + f.y < 1.0) ? 0.0 : 1.0;
+          float faceId = (cell.y * 1000.0 + cell.x) * 2.0 + tri;
+
+          vec2 baseUV = vec2(cell.x / U_CELLS, cell.y / V_CELLS);
+          vec2 duv = vec2(1.0 / U_CELLS, 1.0 / V_CELLS);
+          vec2 uv0;
+          vec2 uv1;
+          vec2 uv2;
+          if (tri < 0.5) {
+            uv0 = baseUV;
+            uv1 = baseUV + vec2(duv.x, 0.0);
+            uv2 = baseUV + vec2(0.0, duv.y);
+          } else {
+            uv0 = baseUV + duv;
+            uv1 = baseUV + vec2(0.0, duv.y);
+            uv2 = baseUV + vec2(duv.x, 0.0);
+          }
+
+          vec3 p0 = sphereFromUV(uv0);
+          vec3 p1 = sphereFromUV(uv1);
+          vec3 p2 = sphereFromUV(uv2);
+          vec3 localFaceNormal = normalize(cross(p1 - p0, p2 - p0));
+          if (dot(localFaceNormal, p0 + p1 + p2) < 0.0) localFaceNormal *= -1.0;
+          vec3 faceNormal = normalize(u_rotation * localFaceNormal);
+
+          vec3 key = normalize(vec3(-0.46, 0.72, 0.60));
+          vec3 fill = normalize(vec3(0.7, -0.2, 0.45));
+          float diffuse = max(dot(faceNormal, key), 0.0);
+          float secondary = max(dot(faceNormal, fill), 0.0) * 0.24;
+          float rim = pow(1.0 - max(dot(normalize(worldPos), normalize(ro - worldPos)), 0.0), 2.3);
+          float faceNoise = hash11(faceId + 17.0);
+
+          vec3 base = mix(vec3(0.055, 0.075, 0.10), vec3(0.16, 0.205, 0.24), faceNoise);
+          float edge = min(min(f.x, f.y), min(1.0 - f.x, 1.0 - f.y));
+          edge = min(edge, abs(f.x + f.y - 1.0) * 0.70710678);
+          float footprint = max(fwidth(grid.x), fwidth(grid.y));
+          float detail = 1.0 - smoothstep(0.55, 2.2, footprint);
+          detail = clamp(detail + u_detailBoost, 0.0, 1.0);
+          float line = 1.0 - smoothstep(0.018, 0.018 + max(fwidth(edge) * 1.25, 0.005), edge);
+          line *= detail;
+
+          vec3 color = base * (0.30 + diffuse * 0.78 + secondary);
+          color += vec3(0.08, 0.12, 0.18) * rim;
+          color = mix(color, color * 0.22, line * 0.82);
+
+          bool isGold = abs(faceId - u_goldFace) < 0.25;
+          if (isGold) {
+            float sparkle = 0.72 + 0.28 * sin(u_time * 3.4 + f.x * 13.0 + f.y * 19.0);
+            vec3 gold = vec3(1.0, 0.55, 0.045) * (0.75 + diffuse * 0.82 + sparkle * 0.32);
+            float glint = pow(max(dot(reflect(-key, faceNormal), normalize(ro - worldPos)), 0.0), 26.0);
+            gold += vec3(1.0, 0.95, 0.62) * glint * 2.7;
+            color = mix(gold, gold * 0.42, line * 0.55);
+          }
+
+          float vignette = 1.0 - smoothstep(0.72, 1.38, length(p));
+          color *= 0.76 + 0.24 * vignette;
+          color = pow(color, vec3(0.86));
+          return vec4(color, 1.0);
+        }
+      `;
+
+      const fragmentSource = isWebGL2
+        ? `#version 300 es\n${fragmentBody}\nout vec4 outColor;\nvoid main(){ outColor = renderPixel(); }`
+        : `#extension GL_OES_standard_derivatives : enable\n${fragmentBody}\nvoid main(){ gl_FragColor = renderPixel(); }`;
+
+      const vs = compileShader(gl.VERTEX_SHADER, vertexSource);
+      const fs = compileShader(gl.FRAGMENT_SHADER, fragmentSource);
+      if (!vs || !fs) return;
+
+      program = gl.createProgram();
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error(gl.getProgramInfoLog(program));
+        webglFallback.classList.remove('hidden');
+        webglFallback.textContent = 'THE SHADER FAILED TO LINK. THE MILLION-SIDED OBJECT HAS UNIONIZED.';
+        gl = null;
+        return;
+      }
+
+      gl.useProgram(program);
+      const positionLocation = gl.getAttribLocation(program, 'a_position');
+      const buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(positionLocation);
+      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+      uniforms = {
+        resolution: gl.getUniformLocation(program, 'u_resolution'),
+        time: gl.getUniformLocation(program, 'u_time'),
+        camera: gl.getUniformLocation(program, 'u_camera'),
+        invRotation: gl.getUniformLocation(program, 'u_invRotation'),
+        rotation: gl.getUniformLocation(program, 'u_rotation'),
+        goldFace: gl.getUniformLocation(program, 'u_goldFace'),
+        detailBoost: gl.getUniformLocation(program, 'u_detailBoost')
+      };
+
+      statusText.textContent = `${isWebGL2 ? 'WebGL2' : 'WebGL1 fallback'} renderer initialized. No external library loaded.`;
+      resizeCanvas();
+      requestAnimationFrame(renderLoop);
+    }
+
+    function compileShader(type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
+        webglFallback.classList.remove('hidden');
+        webglFallback.textContent = 'SHADER ERROR. PRESS ALT+F4 AND PRETEND IT IS 1997.';
+        return null;
+      }
+      return shader;
+    }
+
+    function resizeCanvas() {
+      if (!gl) return;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.7);
+      const width = Math.max(1, Math.floor(rect.width * dpr));
+      const height = Math.max(1, Math.floor(rect.height * dpr));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+        gl.viewport(0, 0, width, height);
+      }
+    }
+
+    function renderLoop(now) {
+      if (!gl) return;
+      const dt = Math.min(0.05, Math.max(0, (now - lastFrame) / 1000));
+      lastFrame = now;
+
+      if (mode === 'approach') updateApproach(now);
+      if (mode === 'explore') updateExplore(dt, now);
+
+      const inv = mat3FromQuat(quatConjugate(orientation));
+      const rot = mat3FromQuat(orientation);
+      gl.useProgram(program);
+      gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
+      gl.uniform1f(uniforms.time, now / 1000);
+      gl.uniform1f(uniforms.camera, cameraDistance);
+      gl.uniformMatrix3fv(uniforms.invRotation, false, inv);
+      gl.uniformMatrix3fv(uniforms.rotation, false, rot);
+      gl.uniform1f(uniforms.goldFace, goldFace);
+      gl.uniform1f(uniforms.detailBoost, mode === 'explore' ? 0.08 : 0.0);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      requestAnimationFrame(renderLoop);
+    }
+
+    function updateApproach(now) {
+      const raw = Math.min(1, (now - approachStart) / APPROACH_MS);
+      const rotateT = smootherstep(Math.min(1, raw / 0.84));
+      orientation = quatSlerp(approachStartOrientation, approachEndOrientation, rotateT);
+
+      // Hold the full object for a moment, then make a slow human-scale approach.
+      let zoomT = 0;
+      if (raw > 0.12) zoomT = smootherstep(Math.min(1, (raw - 0.12) / 0.88));
+      cameraDistance = CAMERA_FAR + (CAMERA_NEAR - CAMERA_FAR) * zoomT;
+
+      if (raw < 0.16) {
+        approachMessage.textContent = 'SELECTING ONE FACE OUT OF 1,000,000…';
+        cameraReadout.textContent = 'CAMERA: ORBITAL';
+      } else if (raw < 0.48) {
+        approachMessage.textContent = `FACE ${formatFace(landingFace)} ACQUIRED — BEGINNING APPROACH…`;
+        cameraReadout.textContent = 'CAMERA: CLOSING';
+      } else if (raw < 0.82) {
+        approachMessage.textContent = 'THE “SMOOTH” SURFACE IS RESOLVING INTO FACES…';
+        cameraReadout.textContent = 'CAMERA: PEDESTRIAN';
+      } else {
+        approachMessage.textContent = 'MATCHING HUMAN VIEWING DISTANCE…';
+        cameraReadout.textContent = 'CAMERA: FINAL 2 METERS';
+      }
+
+      faceReadout.textContent = `TARGET FACE: ${formatFace(landingFace)}`;
+      if (raw >= 1) settleApproach();
+    }
+
+    function updateExplore(dt, now) {
+      let x = 0;
+      let y = 0;
+      if (keys.has('arrowup') || keys.has('w') || heldDirections.has('up')) x -= 1;
+      if (keys.has('arrowdown') || keys.has('s') || heldDirections.has('down')) x += 1;
+      if (keys.has('arrowleft') || keys.has('a') || heldDirections.has('left')) y -= 1;
+      if (keys.has('arrowright') || keys.has('d') || heldDirections.has('right')) y += 1;
+      if (x || y) rotateWorld(x * KEY_SPEED * dt, y * KEY_SPEED * dt);
+
+      centeredFace = faceAtCameraCenter();
+      faceReadout.textContent = `CENTER FACE: ${formatFace(centeredFace)}`;
+
+      if (now - lastVisitSample > 150) {
+        lastVisitSample = now;
+        visitFace(centeredFace);
+      }
+
+      const goldDir = faceCenterDirection(goldFace);
+      const goldWorld = quatRotateVector(orientation, goldDir);
+      const angle = Math.acos(clamp(goldWorld[2], -1, 1));
+      if (angle < 0.0039 && !winShown) showWin(false);
+    }
+
+    function visitFace(faceId) {
+      if (faceId < 0 || visitedFaces.has(faceId)) return;
+      visitedFaces.add(faceId);
+      updateVisitReadout();
+    }
+
+    function updateVisitReadout() {
+      const n = visitedFaces.size;
+      examinedReadout.textContent = `CENTERED FACES: ${n.toLocaleString()} / 1,000,000`;
+      progressBar.style.width = `${Math.max(n ? 0.04 : 0, Math.min(100, n / FACE_COUNT * 100))}%`;
+      if (n > 1) {
+        const elapsed = Math.max(1, (performance.now() - startTime) / 1000);
+        const rate = n / elapsed;
+        const seconds = FACE_COUNT / Math.max(rate, 0.000001);
+        timeEstimate.textContent = `At your current center-face rate (${rate.toFixed(2)}/sec), a complete scan would take about ${humanDuration(seconds)}. This estimate assumes your mortal vessel remains operational.`;
+      }
+    }
+
+    function showWin(immediate) {
+      winShown = true;
+      playWinJingle();
+      const elapsed = Math.max(0, (performance.now() - startTime) / 1000);
+      winCopy.innerHTML = immediate
+        ? `The random approach selected face <strong>${formatFace(goldFace)}</strong> on the first attempt.<br><br>Probability: <strong>0.0001%</strong>. The simulation is now legally suspicious.`
+        : `You brought face <strong>${formatFace(goldFace)}</strong> into the reticle after ${humanDuration(elapsed)} and ${visitedFaces.size.toLocaleString()} centered face${visitedFaces.size === 1 ? '' : 's'}.<br><br>One gold face. Nine hundred ninety-nine thousand nine hundred ninety-nine ordinary ones.`;
+      winBanner.classList.remove('hidden');
+      statusText.textContent = `Gold face ${formatFace(goldFace)} located.`;
+    }
+
+    function rotateWorld(xAngle, yAngle) {
+      if (xAngle) orientation = quatNormalize(quatMultiply(quatAxisAngle([1,0,0], xAngle), orientation));
+      if (yAngle) orientation = quatNormalize(quatMultiply(quatAxisAngle([0,1,0], yAngle), orientation));
+    }
+
+    function faceAtCameraCenter() {
+      const inv = quatConjugate(orientation);
+      const local = quatRotateVector(inv, [0, 0, 1]);
+      return directionToFace(local);
+    }
+
+    function directionToFace(dir) {
+      const x = dir[0], y = clamp(dir[1], -1, 1), z = dir[2];
+      let u = Math.atan2(z, x) / (Math.PI * 2) + 0.5;
+      u = ((u % 1) + 1) % 1;
+      const v = Math.asin(y) / Math.PI + 0.5;
+      const gu = Math.min(U_CELLS - Number.EPSILON, Math.max(0, u * U_CELLS));
+      const gv = Math.min(V_CELLS - Number.EPSILON, Math.max(0, v * V_CELLS));
+      const i = Math.floor(gu);
+      const j = Math.floor(gv);
+      const fu = gu - i;
+      const fv = gv - j;
+      const tri = fu + fv < 1 ? 0 : 1;
+      return (j * U_CELLS + i) * 2 + tri;
+    }
+
+    function faceCenterDirection(faceId) {
+      const cellIndex = Math.floor(faceId / 2);
+      const tri = faceId % 2;
+      const i = cellIndex % U_CELLS;
+      const j = Math.floor(cellIndex / U_CELLS);
+      let u, v;
+      if (tri === 0) {
+        u = (i + 1 / 3) / U_CELLS;
+        v = (j + 1 / 3) / V_CELLS;
+      } else {
+        u = (i + 2 / 3) / U_CELLS;
+        v = (j + 2 / 3) / V_CELLS;
+      }
+      const lon = (u - 0.5) * Math.PI * 2;
+      const lat = (v - 0.5) * Math.PI;
+      const c = Math.cos(lat);
+      return [Math.cos(lon) * c, Math.sin(lat), Math.sin(lon) * c];
+    }
+
+    function randomInt(max) {
+      if (!Number.isSafeInteger(max) || max <= 0) throw new Error('max must be a positive safe integer');
+      const limit = Math.floor(0x100000000 / max) * max;
+      const array = new Uint32Array(1);
+      do crypto.getRandomValues(array); while (array[0] >= limit);
+      return array[0] % max;
+    }
+
+    function formatFace(faceId) {
+      return (faceId + 1).toLocaleString('en-US').padStart(7, '0');
+    }
+
+    function humanDuration(totalSeconds) {
+      totalSeconds = Math.max(0, Math.round(totalSeconds));
+      const days = Math.floor(totalSeconds / 86400);
+      totalSeconds %= 86400;
+      const hours = Math.floor(totalSeconds / 3600);
+      totalSeconds %= 3600;
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      const parts = [];
+      if (days) parts.push(`${days.toLocaleString()} day${days === 1 ? '' : 's'}`);
+      if (hours) parts.push(`${hours} hour${hours === 1 ? '' : 's'}`);
+      if (minutes) parts.push(`${minutes} minute${minutes === 1 ? '' : 's'}`);
+      if (!parts.length || seconds) parts.push(`${seconds} second${seconds === 1 ? '' : 's'}`);
+      return parts.slice(0, 3).join(', ');
+    }
+
+    function smootherstep(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+    function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
+    function quatIdentity() { return [0, 0, 0, 1]; }
+    function quatConjugate(q) { return [-q[0], -q[1], -q[2], q[3]]; }
+    function quatNormalize(q) {
+      const l = Math.hypot(q[0], q[1], q[2], q[3]) || 1;
+      return [q[0]/l, q[1]/l, q[2]/l, q[3]/l];
+    }
+    function quatMultiply(a, b) {
+      const ax=a[0], ay=a[1], az=a[2], aw=a[3];
+      const bx=b[0], by=b[1], bz=b[2], bw=b[3];
+      return [
+        aw*bx + ax*bw + ay*bz - az*by,
+        aw*by - ax*bz + ay*bw + az*bx,
+        aw*bz + ax*by - ay*bx + az*bw,
+        aw*bw - ax*bx - ay*by - az*bz
+      ];
+    }
+    function quatAxisAngle(axis, angle) {
+      const s = Math.sin(angle / 2);
+      return quatNormalize([axis[0]*s, axis[1]*s, axis[2]*s, Math.cos(angle/2)]);
+    }
+    function quatRotateVector(q, v) {
+      const x=v[0], y=v[1], z=v[2];
+      const qx=q[0], qy=q[1], qz=q[2], qw=q[3];
+      const tx = 2 * (qy*z - qz*y);
+      const ty = 2 * (qz*x - qx*z);
+      const tz = 2 * (qx*y - qy*x);
+      return [
+        x + qw*tx + (qy*tz - qz*ty),
+        y + qw*ty + (qz*tx - qx*tz),
+        z + qw*tz + (qx*ty - qy*tx)
+      ];
+    }
+    function quatFromTo(from, to) {
+      const f = normalize3(from);
+      const t = normalize3(to);
+      const dot = clamp(f[0]*t[0] + f[1]*t[1] + f[2]*t[2], -1, 1);
+      if (dot > 0.999999) return quatIdentity();
+      if (dot < -0.999999) {
+        const axis = Math.abs(f[0]) < 0.8 ? normalize3([0, -f[2], f[1]]) : normalize3([-f[1], f[0], 0]);
+        return quatAxisAngle(axis, Math.PI);
+      }
+      const axis = [
+        f[1]*t[2] - f[2]*t[1],
+        f[2]*t[0] - f[0]*t[2],
+        f[0]*t[1] - f[1]*t[0]
+      ];
+      return quatNormalize([axis[0], axis[1], axis[2], 1 + dot]);
+    }
+    function quatSlerp(a, b, t) {
+      let bx=b[0], by=b[1], bz=b[2], bw=b[3];
+      let cos = a[0]*bx + a[1]*by + a[2]*bz + a[3]*bw;
+      if (cos < 0) { cos=-cos; bx=-bx; by=-by; bz=-bz; bw=-bw; }
+      if (cos > 0.9995) {
+        return quatNormalize([
+          a[0] + t*(bx-a[0]),
+          a[1] + t*(by-a[1]),
+          a[2] + t*(bz-a[2]),
+          a[3] + t*(bw-a[3])
+        ]);
+      }
+      const theta0 = Math.acos(clamp(cos, -1, 1));
+      const sin0 = Math.sin(theta0);
+      const s0 = Math.sin((1-t)*theta0)/sin0;
+      const s1 = Math.sin(t*theta0)/sin0;
+      return [a[0]*s0+bx*s1, a[1]*s0+by*s1, a[2]*s0+bz*s1, a[3]*s0+bw*s1];
+    }
+    function randomQuaternion() {
+      const u1 = randomInt(1_000_000) / 1_000_000;
+      const u2 = randomInt(1_000_000) / 1_000_000;
+      const u3 = randomInt(1_000_000) / 1_000_000;
+      return [
+        Math.sqrt(1-u1) * Math.sin(2*Math.PI*u2),
+        Math.sqrt(1-u1) * Math.cos(2*Math.PI*u2),
+        Math.sqrt(u1) * Math.sin(2*Math.PI*u3),
+        Math.sqrt(u1) * Math.cos(2*Math.PI*u3)
+      ];
+    }
+    function normalize3(v) {
+      const l = Math.hypot(v[0], v[1], v[2]) || 1;
+      return [v[0]/l, v[1]/l, v[2]/l];
+    }
+    function mat3FromQuat(q) {
+      const x=q[0], y=q[1], z=q[2], w=q[3];
+      const xx=x*x, yy=y*y, zz=z*z;
+      const xy=x*y, xz=x*z, yz=y*z;
+      const wx=w*x, wy=w*y, wz=w*z;
+      // Column-major for WebGL.
+      return new Float32Array([
+        1-2*(yy+zz), 2*(xy+wz), 2*(xz-wy),
+        2*(xy-wz), 1-2*(xx+zz), 2*(yz+wx),
+        2*(xz+wy), 2*(yz-wx), 1-2*(xx+yy)
+      ]);
+    }
+
+    function playTone(frequency, duration, type='sine', volume=0.04, delay=0) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        playTone.ctx ||= new AudioCtx();
+        const ctx = playTone.ctx;
+        const start = ctx.currentTime + delay;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(frequency, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(volume, start + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + duration + 0.02);
+      } catch (_) { /* Audio is optional. Probability remains hostile. */ }
+    }
+    function playErrorBuzz() {
+      playTone(145, 0.11, 'square', 0.035);
+      playTone(116, 0.16, 'square', 0.03, 0.09);
+    }
+    function playWinJingle() {
+      [523,659,784,1047].forEach((f,i) => playTone(f, 0.15, 'square', 0.035, i*0.11));
+    }
+
+    // Expose a tiny diagnostic surface for automated museum testing.
+    window.__millionDie = {
+      getState: () => ({ mode, goldFace, landingFace, centeredFace, cameraDistance, visited: visitedFaces.size }),
+      beginApproach,
+      faceCenterDirection,
+      directionToFace
+    };
+  })();
+  </script>
+</body>
+</html>
