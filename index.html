@@ -1189,21 +1189,30 @@
           // respect each axis separately or the pole dissolves into streaks.
           float fu = fwidth(grid.x);
           float fv = fwidth(grid.y);
-          // Physical cell aspect: u-cells narrow by cos(latitude), so toward
-          // the poles faces become tall needles. Fade their individual
-          // identity and u-edges there — the surface reads as clean
-          // concentric ring grooves instead of streak moiré.
-          float cosLat = sqrt(max(1.0 - localPos.y * localPos.y, 0.0));
-          float identity = smoothstep(0.08, 0.30, cosLat);
-          float detailU = clamp(1.0 - smoothstep(0.45, 2.4, fu) + u_detailBoost, 0.0, 1.0) * identity;
-          float detailV = clamp(1.0 - smoothstep(0.45, 2.4, fv) + u_detailBoost, 0.0, 1.0);
+          // Each edge family exists only while its cells are wide enough on
+          // screen to draw (roughly 6px for full detail, gone under ~2.5px).
+          // Near the poles u-cells narrow with cos(latitude), so this fades
+          // the u-edges naturally as the needles pinch — no latitude special
+          // case needed, and every piece that can be seen is drawn.
+          float detailU = clamp(1.0 - smoothstep(0.16, 0.42, fu) + u_detailBoost, 0.0, 1.0);
+          float detailV = clamp(1.0 - smoothstep(0.16, 0.42, fv) + u_detailBoost, 0.0, 1.0);
           float axisDetail = max(detailU, detailV);
           float aniso = min(fu, fv) / max(max(fu, fv), 0.00001);
-          // How much face identity (tilt, tint) survives: fully when a face
-          // covers whole pixels; as aliasing-grain only where the pixel
-          // footprint is roughly isotropic. Sliver faces average away.
+          // How much face identity (tilt, tint) survives: fully for chunky
+          // isotropic faces, gently muted for tall needles (streaks read as
+          // noise), and as aliasing-grain where subpixel but isotropic.
           float resolved = min(detailU, detailV);
-          float faceAmp = clamp(resolved + aniso * (1.0 - resolved), 0.0, 1.0) * identity;
+          float faceAmp = clamp(resolved * pow(max(aniso, 0.0001), 0.35) + aniso * (1.0 - resolved), 0.0, 1.0);
+
+          // Toward the poles single u-cells pinch below a pixel, so segment
+          // edges regroup every power of two cells to keep drawn wedges
+          // roughly 6px wide, cross-faded between levels. Every line drawn
+          // is a real face boundary — just not every face boundary is drawn.
+          float lodU = max(0.0, log2(max(fu, 0.000001) / 0.16));
+          float kA = exp2(floor(lodU));
+          float kB = kA * 2.0;
+          float lodF = fract(lodU);
+          float segGate = detailV * min(lodU, 1.0);
 
           // Each stamped facet is tilted a hair off true, and roughly one in
           // ten is cut noticeably off-axis — those are the ones that catch the
@@ -1215,15 +1224,20 @@
             hash11(faceId * 1.3173 + 7.71) - 0.5,
             hash11(faceId * 2.1317 + 1.33) - 0.5) * tiltAmp);
           // Near the poles the per-cell normal depends on a numerically wild
-          // azimuth cell index. Blend to the analytic lathe normal of the
-          // latitude band — faceted in v, smooth around the axis.
+          // azimuth cell index. Blend to the analytic normal of the grouped
+          // wedge segment instead — faceted in v and in grouped u, stable.
           float latMid = ((cell.y + 0.5) / V_CELLS - 0.5) * PI;
-          float invCosLat = 1.0 / max(cosLat, 0.00001);
-          vec3 bandNormal = normalize(vec3(
-            cos(latMid) * localPos.x * invCosLat,
-            sin(latMid),
-            cos(latMid) * localPos.z * invCosLat));
-          vec3 shapeLocal = normalize(mix(bandNormal, tiltedLocal, identity));
+          float lonA = ((floor(grid.x / kA) + 0.5) * kA / U_CELLS - 0.5) * TAU;
+          float lonB = ((floor(grid.x / kB) + 0.5) * kB / U_CELLS - 0.5) * TAU;
+          float bandC = cos(latMid);
+          vec3 bandNormal = normalize(mix(
+            vec3(bandC * cos(lonA), sin(latMid), bandC * sin(lonA)),
+            vec3(bandC * cos(lonB), sin(latMid), bandC * sin(lonB)), lodF));
+          // Only fall back to the lathe normal where u-cells are subpixel AND
+          // strongly anisotropic (the polar pinch) — never at plain distance,
+          // where isotropic subpixel facets are what makes the sparkle.
+          float poleBlend = (1.0 - detailU) * (1.0 - aniso);
+          vec3 shapeLocal = normalize(mix(tiltedLocal, bandNormal, poleBlend));
           vec3 faceNormal = normalize(u_rotation * shapeLocal);
           vec3 sphereNormal = normalize(worldPos);
 
@@ -1233,14 +1247,33 @@
           // little facet influence so the distant object still sparkles.
           float edgeU = min(min(f.x, 1.0 - f.x), abs(f.x + f.y - 1.0) * 0.70710678);
           float edgeV = min(f.y, 1.0 - f.y);
-          float bevel = min(mix(1.0, smoothstep(0.0, 0.05, edgeU), detailU),
-                            mix(1.0, smoothstep(0.0, 0.05, edgeV), detailV));
+          // Bevel and groove widths clamp to ~1.5px so thin cells get soft
+          // antialiased seams instead of subpixel shimmer.
+          float wU = max(0.05, fu * 1.5);
+          float wV = max(0.05, fv * 1.5);
+          float bevel = min(mix(1.0, smoothstep(0.0, wU, edgeU), detailU),
+                            mix(1.0, smoothstep(0.0, wV, edgeV), detailV));
+
+          // Grouped wedge seams where native u-edges are too thin to draw.
+          float fxA = fract(grid.x / kA);
+          float fxB = fract(grid.x / kB);
+          float eUA = min(fxA, 1.0 - fxA);
+          float eUB = min(fxB, 1.0 - fxB);
+          float fuA = fu / kA;
+          float fuB = fu / kB;
+          float segBevel = mix(1.0, mix(smoothstep(0.0, max(0.05, fuA * 1.5), eUA),
+                                        smoothstep(0.0, max(0.05, fuB * 1.5), eUB), lodF), segGate);
+          bevel = min(bevel, segBevel);
+
           float facetStrength = mix(0.30 * faceAmp, bevel, axisDetail);
           vec3 n = normalize(mix(sphereNormal, faceNormal, facetStrength));
 
           // Grooves between facets trap light.
-          float ao = min(mix(1.0, 0.32 + 0.68 * smoothstep(0.0, 0.09, edgeU), detailU),
-                         mix(1.0, 0.32 + 0.68 * smoothstep(0.0, 0.09, edgeV), detailV));
+          float ao = min(mix(1.0, 0.32 + 0.68 * smoothstep(0.0, max(0.09, fu * 1.5), edgeU), detailU),
+                         mix(1.0, 0.32 + 0.68 * smoothstep(0.0, max(0.09, fv * 1.5), edgeV), detailV));
+          float segAO = mix(1.0, 0.45 + 0.55 * mix(smoothstep(0.0, max(0.09, fuA * 2.0), eUA),
+                                                   smoothstep(0.0, max(0.09, fuB * 2.0), eUB), lodF), segGate);
+          ao = min(ao, segAO);
 
           vec3 viewDir = normalize(ro - worldPos);
           vec3 key = normalize(vec3(-0.46, 0.72, 0.60));
