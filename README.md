@@ -8,11 +8,7 @@ A deliberately 1997-flavored, single-file web toy that makes one-in-a-million od
 
 ## Live demo
 
-Once GitHub Pages is enabled for this repo, the die lives at:
-
-```
-https://<your-username>.github.io/feeling-lucky-d1000000/
-```
+**[https://bneidlinger.github.io/feelin_lucky/](https://bneidlinger.github.io/feelin_lucky/)**
 
 ## The experience
 
@@ -44,7 +40,6 @@ A small diagnostic surface is exposed at `window.__millionDie` (`getState()`, `b
 
 1. Push this repo to GitHub.
 2. **Settings → Pages → Source:** deploy from branch `main`, folder `/ (root)`.
-3. After the first deploy, replace the relative `og:image` / social-card URLs in `index.html` with the absolute Pages URL (crawlers require absolute URLs).
 
 ## License
 
