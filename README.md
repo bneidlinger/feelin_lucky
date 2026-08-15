@@ -14,7 +14,9 @@ A deliberately 1997-flavored, single-file web toy that makes one-in-a-million od
 
 | From orbit | At human range |
 |---|---|
-| ![The die from a distance — an apparently smooth sphere](assets/far-view.png) | One million addressable triangles, one of them gold. Drag, hold arrow keys / WASD, or use the on-screen pad. Movement is intentionally restrained — the universe does not owe you a convenient search speed. |
+| ![The die from a distance — an apparently smooth sphere](assets/far-view.png) | ![Up close — beveled metallic facets, and the gold one](assets/gold-closeup.png) |
+
+One million addressable triangles, one of them gold. Drag, hold arrow keys / WASD, or use the on-screen pad. Movement is intentionally restrained — the universe does not owe you a convenient search speed.
 
 - **YES** selects one of 1,000,000 face addresses using the browser's cryptographic RNG. If the first random face is gold, that genuinely happened at 1-in-1,000,000 odds for your session.
 - **NO** produces a randomized anti-meme error dialog, as required by Internet law.

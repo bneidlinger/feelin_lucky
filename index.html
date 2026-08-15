@@ -1103,6 +1103,23 @@
           return fract(p);
         }
 
+        float hash21(vec2 p) {
+          vec3 q = fract(vec3(p.xyx) * 0.1031);
+          q += dot(q, q.yzx + 33.33);
+          return fract((q.x + q.y) * q.z);
+        }
+
+        // Procedural night environment used for specular reflections:
+        // a deep blue gradient, a faint galactic band, and reflected stars.
+        vec3 envColor(vec3 r) {
+          float up = r.y * 0.5 + 0.5;
+          vec3 sky = mix(vec3(0.010, 0.014, 0.030), vec3(0.075, 0.115, 0.220), pow(up, 1.6));
+          sky += vec3(0.085, 0.075, 0.120) * exp(-abs(r.y + 0.18) * 3.5);
+          float star = step(0.9935, hash21(floor(vec2(atan(r.z, r.x) * 120.0, r.y * 150.0))));
+          sky += vec3(0.85, 0.92, 1.0) * star * 0.30;
+          return sky;
+        }
+
         vec3 sphereFromUV(vec2 uv) {
           float lon = (uv.x - 0.5) * TAU;
           float lat = (uv.y - 0.5) * PI;
@@ -1163,40 +1180,70 @@
           vec3 p2 = sphereFromUV(uv2);
           vec3 localFaceNormal = normalize(cross(p1 - p0, p2 - p0));
           if (dot(localFaceNormal, p0 + p1 + p2) < 0.0) localFaceNormal *= -1.0;
-          vec3 faceNormal = normalize(u_rotation * localFaceNormal);
+          // Each stamped facet is tilted a hair off true, and roughly one in
+          // ten is cut noticeably off-axis — those are the ones that catch the
+          // light and make the surface glitter as it rotates.
+          float cut = hash11(faceId * 3.719 + 0.51);
+          float tiltAmp = 0.045 + step(0.86, cut) * 0.24;
+          vec3 tiltedLocal = normalize(localFaceNormal + vec3(
+            hash11(faceId * 0.7719 + 3.17) - 0.5,
+            hash11(faceId * 1.3173 + 7.71) - 0.5,
+            hash11(faceId * 2.1317 + 1.33) - 0.5) * tiltAmp);
+          vec3 faceNormal = normalize(u_rotation * tiltedLocal);
+          vec3 sphereNormal = normalize(worldPos);
 
-          vec3 key = normalize(vec3(-0.46, 0.72, 0.60));
-          vec3 fill = normalize(vec3(0.7, -0.2, 0.45));
-          float diffuse = max(dot(faceNormal, key), 0.0);
-          float secondary = max(dot(faceNormal, fill), 0.0) * 0.24;
-          float rim = pow(1.0 - max(dot(normalize(worldPos), normalize(ro - worldPos)), 0.0), 2.3);
-          float faceNoise = hash11(faceId + 17.0);
-
-          vec3 base = mix(vec3(0.055, 0.075, 0.10), vec3(0.16, 0.205, 0.24), faceNoise);
           float edge = min(min(f.x, f.y), min(1.0 - f.x, 1.0 - f.y));
           edge = min(edge, abs(f.x + f.y - 1.0) * 0.70710678);
           float footprint = max(fwidth(grid.x), fwidth(grid.y));
-          float detail = 1.0 - smoothstep(0.55, 2.2, footprint);
+          float detail = 1.0 - smoothstep(0.45, 2.4, footprint);
           detail = clamp(detail + u_detailBoost, 0.0, 1.0);
-          float line = 1.0 - smoothstep(0.018, 0.018 + max(fwidth(edge) * 1.25, 0.005), edge);
-          line *= detail;
 
-          vec3 color = base * (0.30 + diffuse * 0.78 + secondary);
-          color += vec3(0.08, 0.12, 0.18) * rim;
-          color = mix(color, color * 0.22, line * 0.82);
+          // Rounded bevels: near an edge the normal rolls back toward the
+          // smooth sphere. When faces are subpixel, keep a little facet
+          // influence so the distant object still sparkles.
+          float bevel = smoothstep(0.0, 0.05, edge);
+          float facetStrength = mix(0.30, bevel, detail);
+          vec3 n = normalize(mix(sphereNormal, faceNormal, facetStrength));
+
+          // Grooves between facets trap light.
+          float ao = mix(1.0, 0.32 + 0.68 * smoothstep(0.0, 0.09, edge), detail);
+
+          vec3 viewDir = normalize(ro - worldPos);
+          vec3 key = normalize(vec3(-0.46, 0.72, 0.60));
+          vec3 fill = normalize(vec3(0.70, -0.20, 0.45));
+          float diffuse = max(dot(n, key), 0.0);
+          float secondary = max(dot(n, fill), 0.0) * 0.26;
+          vec3 halfVec = normalize(key + viewDir);
+          float ndh = max(dot(n, halfVec), 0.0);
+          float ndh2 = max(dot(n, normalize(fill + viewDir)), 0.0);
+          float specSharp = pow(ndh, 140.0) + pow(ndh2, 140.0) * 0.55;
+          float specBroad = pow(ndh, 16.0);
+          float fresnel = pow(1.0 - max(dot(n, viewDir), 0.0), 5.0);
+          vec3 env = envColor(reflect(-viewDir, n));
+
+          float faceNoise = hash11(faceId + 17.0);
+          float grain = hash21(cell * 3.7 + floor(f * 18.0) * 0.591);
+          vec3 albedo = mix(vec3(0.040, 0.050, 0.065), vec3(0.115, 0.135, 0.160), faceNoise);
+          albedo *= 1.0 + (grain - 0.5) * 0.18 * detail;
+
+          vec3 color = albedo * (0.10 + 0.95 * diffuse + secondary) * ao;
+          color += (specSharp * 1.15 + specBroad * 0.09) * vec3(1.0, 0.98, 0.93) * (0.45 + 0.55 * fresnel) * ao;
+          color += env * (0.10 + 0.55 * fresnel) * ao;
 
           bool isGold = abs(faceId - u_goldFace) < 0.25;
           if (isGold) {
-            float sparkle = 0.72 + 0.28 * sin(u_time * 3.4 + f.x * 13.0 + f.y * 19.0);
-            vec3 gold = vec3(1.0, 0.55, 0.045) * (0.75 + diffuse * 0.82 + sparkle * 0.32);
-            float glint = pow(max(dot(reflect(-key, faceNormal), normalize(ro - worldPos)), 0.0), 26.0);
-            gold += vec3(1.0, 0.95, 0.62) * glint * 2.7;
-            color = mix(gold, gold * 0.42, line * 0.55);
+            float sparkle = 0.78 + 0.22 * sin(u_time * 3.4 + f.x * 13.0 + f.y * 19.0);
+            vec3 goldAlbedo = vec3(1.0, 0.48, 0.05);
+            color = goldAlbedo * (0.15 + 0.95 * diffuse + secondary * 0.5) * ao;
+            color += vec3(1.0, 0.80, 0.45) * (specSharp * 3.2 + specBroad * 0.55) * sparkle * ao;
+            color += env * vec3(1.0, 0.70, 0.30) * (0.25 + 0.75 * fresnel);
           }
 
           float vignette = 1.0 - smoothstep(0.72, 1.38, length(p));
-          color *= 0.76 + 0.24 * vignette;
-          color = pow(color, vec3(0.86));
+          color *= 0.80 + 0.20 * vignette;
+          // Filmic (ACES-fit) tonemap, then gamma encode.
+          color = (color * (2.51 * color + 0.03)) / (color * (2.43 * color + 0.59) + 0.14);
+          color = pow(clamp(color, 0.0, 1.0), vec3(0.4545));
           return vec4(color, 1.0);
         }
       `;
@@ -1260,7 +1307,7 @@
     function resizeCanvas() {
       if (!gl) return;
       const rect = canvas.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.7);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const width = Math.max(1, Math.floor(rect.width * dpr));
       const height = Math.max(1, Math.floor(rect.height * dpr));
       if (canvas.width !== width || canvas.height !== height) {
